@@ -12,4 +12,3 @@
 工会、VIP、商城和 TPA 会在保存用户可自定义文本前惰性调用这个 API。
 请和 `LuckyClover-Moderation` 放在同一个服务器插件目录中；不需要安装
 `LuckyClover-Plugin`。
-

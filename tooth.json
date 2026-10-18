@@ -13,7 +13,7 @@
             "platform": "win-x64",
             "dependencies": {
                 "github.com/LiteLDev/LeviLamina": ">=26.51.0",
-                "github.com/LiteLDev/iListenAttentively": ">=0.17.1"
+                "github.com/LiteLDev/iListenAttentively": ">=0.17.0"
             },
             "assets": [
                 "LuckyClover-Moderation.dll",

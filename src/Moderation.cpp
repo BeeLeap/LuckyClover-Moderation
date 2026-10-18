@@ -535,6 +535,7 @@ bool Moderation::onHangingSignPacket(ServerPlayer& player, std::shared_ptr<Block
         );
         LLEventBus.publish(beforeEvent);
         if (beforeEvent.isCancelled()) return true;
+        (*packet->mData)["FrontText"]["Text"].get<StringTag>() = beforeEvent.text();
     }
     if (backEdit) {
         auto beforeEvent = SignEditEvent(
@@ -545,6 +546,7 @@ bool Moderation::onHangingSignPacket(ServerPlayer& player, std::shared_ptr<Block
         );
         LLEventBus.publish(beforeEvent);
         if (beforeEvent.isCancelled()) return true;
+        (*packet->mData)["BackText"]["Text"].get<StringTag>() = beforeEvent.text();
     }
     return false;
 }
@@ -552,4 +554,3 @@ bool Moderation::onHangingSignPacket(ServerPlayer& player, std::shared_ptr<Block
 LL_REGISTER_MOD(Moderation, Moderation::getInstance());
 
 } // namespace lucky_clover::moderation
-

@@ -8,7 +8,7 @@
 
 ## 构建
 
-当前目标为 LeviLamina 26.51.x，依赖上游 `LiteLDev/iListenAttentively` 0.17.1 或更新版本。该上游的 v0.17.0 已明确适配 LeviLamina 26.51。
+当前目标为 LeviLamina 26.51.x，依赖上游 `LiteLDev/iListenAttentively` 0.17.0 或更新版本。该上游的 v0.17.0 已明确适配 LeviLamina 26.51。
 
 需要准备：
 
@@ -44,4 +44,3 @@ xmake
 ## 运行时依赖
 
 服务端必须同时安装与当前 LeviLamina ABI 匹配的 `iListenAttentively`。插件通过 LeviLamina 事件总线订阅原生聊天事件和 iListenAttentively 的完整告示牌事件 ID，并使用通用事件序列化接口修改告示牌文本，因此不需要 iListen SDK 或 import library。本插件也不依赖 LseExport。
-
