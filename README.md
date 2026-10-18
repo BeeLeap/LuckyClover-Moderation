@@ -32,6 +32,13 @@ xmake
 
 自定义词和白名单均支持温和的大小写、全半角 ASCII 归一化。白名单优先于内置词和自定义词。
 
+## LLSE API
+
+系列脚本插件可以通过单独安装 `LuckyClover-Moderation-API` 使用
+`LuckyCloverModeration.filterText(text)`、`containsBannedWord(text)` 和
+`reload()`。这个桥接插件只读取本插件的配置和静态词库，不依赖
+`LuckyClover-Plugin`；工会、VIP、商城和 TPA 已在保存自定义文本前接入。
+
 如果首次启动时没有本插件配置，但发现旧核心配置，会自动迁移 `LuckyClover-Plugin/config.json` 中的 `bannedWords` 设置。
 
 ## 运行时依赖
