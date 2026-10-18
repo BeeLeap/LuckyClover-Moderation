@@ -1,12 +1,12 @@
 {
     "format_version": 2,
-    "tooth": "github.com/Mell/LuckyClover-Moderation",
+    "tooth": "github.com/BeeLeap/LuckyClover-Moderation",
     "version": "0.2.9",
     "info": {
         "name": "LuckyClover-Moderation",
-        "description": "Native chat and sign moderation for LuckyClover",
+        "description": "Native chat, book, anvil and sign moderation for LuckyClover",
         "author": "Mell",
-            "tags": ["levilamina", "native", "chat", "sign", "moderation"]
+        "tags": ["levilamina", "native", "chat", "book", "anvil", "sign", "moderation"]
     },
     "variants": [
         {
@@ -31,4 +31,3 @@
         }
     ]
 }
-
