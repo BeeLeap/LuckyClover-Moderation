@@ -1,7 +1,7 @@
 {
     "format_version": 2,
     "tooth": "github.com/BeeLeap/LuckyClover-Moderation",
-    "version": "0.2.10",
+    "version": "0.2.11",
     "info": {
         "name": "LuckyClover-Moderation",
         "description": "Native chat, book, anvil and sign moderation for LuckyClover",
