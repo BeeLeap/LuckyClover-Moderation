@@ -1,0 +1,83 @@
+name: Build and publish release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows server plugin
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+
+      - name: Cache xmake packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\.xmake
+          key: xmake-windows-server-${{ hashFiles('xmake.lua') }}
+          restore-keys: |
+            xmake-windows-server-
+            xmake-
+
+      - name: Setup LLVM
+        uses: ZhongRuoyu/setup-llvm@v0
+        with:
+          llvm-version: 22
+
+      - name: Update xmake repositories
+        shell: pwsh
+        run: xmake repo -u
+
+      - name: Configure
+        shell: pwsh
+        run: xmake f -y -p windows -a x64 -m release --target_type=server
+
+      - name: Build
+        shell: pwsh
+        run: xmake -w -y
+
+      - name: Assemble native plugin package
+        shell: pwsh
+        run: |
+          $package = Join-Path $env:RUNNER_TEMP 'LuckyClover-Moderation'
+          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          Copy-Item 'bin/LuckyClover-Moderation/LuckyClover-Moderation.dll' $package
+          Copy-Item 'manifest.json', 'config.example.json', 'README.md', 'LICENSE' $package
+          Copy-Item -Recurse 'data' $package
+          Compress-Archive -Path (Join-Path $package '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE "LuckyClover-Moderation-${{ github.event.release.tag_name }}-win-x64.zip") -Force
+
+      - name: Assemble API package
+        shell: pwsh
+        run: |
+          $api = Join-Path $env:RUNNER_TEMP 'LuckyClover-Moderation-API'
+          New-Item -ItemType Directory -Force -Path $api | Out-Null
+          Copy-Item 'LuckyClover-Moderation-API/manifest.json', 'LuckyClover-Moderation-API/LuckyClover-Moderation-API.js', 'LuckyClover-Moderation-API/README.md', 'LuckyClover-Moderation-API/LICENSE' $api
+          Compress-Archive -Path (Join-Path $api '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE "LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip") -Force
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LuckyClover-Moderation-${{ github.event.release.tag_name }}
+          path: |
+            LuckyClover-Moderation-${{ github.event.release.tag_name }}-win-x64.zip
+            LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip
+
+      - name: Extract release notes
+        id: release-notes
+        uses: ffurrer2/extract-release-notes@v3
+
+      - name: Upload assets to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.release-notes.outputs.release_notes }}
+          files: |
+            LuckyClover-Moderation-${{ github.event.release.tag_name }}-win-x64.zip
+            LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip
