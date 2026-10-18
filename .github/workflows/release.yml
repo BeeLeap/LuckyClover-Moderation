@@ -11,21 +11,21 @@ jobs:
   build:
     name: Build Windows server plugin
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup xmake
         uses: xmake-io/github-action-setup-xmake@v1
 
       - name: Cache xmake packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
-          path: ~\AppData\Local\.xmake
-          key: xmake-windows-server-${{ hashFiles('xmake.lua') }}
+          path: |
+            ~/AppData/Local/.xmake
+          key: xmake-${{ hashFiles('xmake.lua') }}
           restore-keys: |
-            xmake-windows-server-
             xmake-
 
       - name: Setup LLVM
@@ -33,36 +33,19 @@ jobs:
         with:
           llvm-version: 22
 
-      - name: Check build tools
+      - name: Update xmake repositories
         shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          xmake --version
-          clang-cl --version
-          if (-not (Get-Command clang-cl -ErrorAction SilentlyContinue)) {
-            throw 'clang-cl was not found on PATH'
-          }
+        run: xmake repo -u
 
       - name: Configure
         shell: pwsh
-        timeout-minutes: 15
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Host 'Starting xmake configure with verbose diagnostics...'
-          xmake f -y -v -D -p windows -a x64 -m release --target_type=server
-          if ($LASTEXITCODE -ne 0) {
-            throw "xmake configure failed with exit code $LASTEXITCODE"
-          }
+        timeout-minutes: 20
+        run: xmake f -a x64 -m release -p windows --target_type=server -v -y
 
       - name: Build
         shell: pwsh
-        timeout-minutes: 15
-        run: |
-          $ErrorActionPreference = 'Stop'
-          xmake -w -y -v
-          if ($LASTEXITCODE -ne 0) {
-            throw "xmake build failed with exit code $LASTEXITCODE"
-          }
+        timeout-minutes: 20
+        run: xmake -w -y
 
       - name: Assemble native plugin package
         shell: pwsh
@@ -83,7 +66,7 @@ jobs:
           Compress-Archive -Path (Join-Path $api '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE "LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip") -Force
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: LuckyClover-Moderation-${{ github.event.release.tag_name }}
           path: |
@@ -95,9 +78,10 @@ jobs:
         uses: ffurrer2/extract-release-notes@v3
 
       - name: Upload assets to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          body: ${{ steps.release-notes.outputs.release_notes }}
+          body: |
+            ${{ steps.release-notes.outputs.release_notes }}
           files: |
             LuckyClover-Moderation-${{ github.event.release.tag_name }}-win-x64.zip
             LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip
