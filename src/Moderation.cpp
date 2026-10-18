@@ -63,7 +63,7 @@ LL_TYPE_INSTANCE_HOOK(
     NetworkIdentifier const& source,
     BookEditPacket const& packet
 ) {
-    auto& mutablePacket = const_cast<BookEditPacket&>(packet);
+    auto mutablePacket = packet;
     std::visit(
         [](auto& action) {
             using Action = std::decay_t<decltype(action)>;
@@ -77,7 +77,7 @@ LL_TYPE_INSTANCE_HOOK(
         },
         mutablePacket.mOperation.get()
     );
-    origin(source, packet);
+    origin(source, mutablePacket);
 }
 
 LL_TYPE_INSTANCE_HOOK(
@@ -89,13 +89,13 @@ LL_TYPE_INSTANCE_HOOK(
     NetworkIdentifier const&       source,
     ItemStackRequestPacket const& packet
 ) {
-    auto& mutablePacket = const_cast<ItemStackRequestPacket&>(packet);
+    auto mutablePacket = packet;
     for (auto& request : mutablePacket.mRequests.get()) {
         for (auto& text : request.mStringsToFilter.get()) {
             Moderation::getInstance().moderateText(text);
         }
     }
-    origin(source, packet);
+    origin(source, mutablePacket);
 }
 
 Moderation& Moderation::getInstance() {
@@ -146,6 +146,14 @@ bool Moderation::enable() {
     if (!ll::event::EventBus::getInstance().addListener(mSignListener)) {
         mSignListener.reset();
         mSelf.getLogger().error("Failed to subscribe to PlayerEditSignBeforeEvent");
+        if (mTickListener) {
+            ll::event::EventBus::getInstance().removeListener(mTickListener);
+            mTickListener.reset();
+        }
+        if (mChatListener) {
+            ll::event::EventBus::getInstance().removeListener(mChatListener);
+            mChatListener.reset();
+        }
         return false;
     }
 
@@ -256,6 +264,11 @@ bool Moderation::tryMigrateLegacyConfig() {
 
 bool Moderation::loadWords() {
     std::string stage = "initializing word lists";
+    auto previousConfig = mConfig;
+    auto previousWords = mWords;
+    auto previousWhitelist = mWhitelist;
+    auto previousTrie = std::move(mTrie);
+    auto previousWhitelistTrie = std::move(mWhitelistTrie);
     try {
         mSelf.getLogger().info("Loading moderation word lists");
         mWords.clear();
@@ -313,9 +326,19 @@ bool Moderation::loadWords() {
         mSelf.getLogger().info("Moderation word lists ready; loaded {} words", mWords.size());
         return true;
     } catch (std::exception const& error) {
+        mConfig = std::move(previousConfig);
+        mWords = std::move(previousWords);
+        mWhitelist = std::move(previousWhitelist);
+        mTrie = std::move(previousTrie);
+        mWhitelistTrie = std::move(previousWhitelistTrie);
         mSelf.getLogger().error("Moderation word-list load failed during {}: {}", stage, error.what());
         return false;
     } catch (...) {
+        mConfig = std::move(previousConfig);
+        mWords = std::move(previousWords);
+        mWhitelist = std::move(previousWhitelist);
+        mTrie = std::move(previousTrie);
+        mWhitelistTrie = std::move(previousWhitelistTrie);
         mSelf.getLogger().error("Moderation word-list load failed during {} with an unknown exception", stage);
         return false;
     }
@@ -508,7 +531,8 @@ void Moderation::onEditSign(SignEditEvent& event) {
 }
 
 bool Moderation::onHangingSignPacket(ServerPlayer& player, std::shared_ptr<BlockActorDataPacket> const& packet) {
-    if (!packet || !packet->mData->contains("id", Tag::Type::String) || (*packet->mData)["id"] != "HangingSign") {
+    if (!packet || !packet->mData->contains("id", Tag::Type::String) ||
+        (*packet->mData)["id"] != "HangingSign") {
         return false;
     }
     if (!packet->mData->contains("FrontText", Tag::Type::Compound) ||
