@@ -11,6 +11,7 @@ jobs:
   build:
     name: Build Windows server plugin
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,17 +33,36 @@ jobs:
         with:
           llvm-version: 22
 
-      - name: Update xmake repositories
+      - name: Check build tools
         shell: pwsh
-        run: xmake repo -u
+        run: |
+          $ErrorActionPreference = 'Stop'
+          xmake --version
+          clang-cl --version
+          if (-not (Get-Command clang-cl -ErrorAction SilentlyContinue)) {
+            throw 'clang-cl was not found on PATH'
+          }
 
       - name: Configure
         shell: pwsh
-        run: xmake f -y -p windows -a x64 -m release --target_type=server
+        timeout-minutes: 15
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host 'Starting xmake configure with verbose diagnostics...'
+          xmake f -y -v -D -p windows -a x64 -m release --target_type=server
+          if ($LASTEXITCODE -ne 0) {
+            throw "xmake configure failed with exit code $LASTEXITCODE"
+          }
 
       - name: Build
         shell: pwsh
-        run: xmake -w -y
+        timeout-minutes: 15
+        run: |
+          $ErrorActionPreference = 'Stop'
+          xmake -w -y -v
+          if ($LASTEXITCODE -ne 0) {
+            throw "xmake build failed with exit code $LASTEXITCODE"
+          }
 
       - name: Assemble native plugin package
         shell: pwsh
