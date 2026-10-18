@@ -1,0 +1,14 @@
+{
+    "name": "LuckyClover-Moderation-API",
+    "entry": "LuckyClover-Moderation-API.js",
+    "type": "lse-quickjs",
+    "version": "0.1.0",
+    "author": "Mell",
+    "description": "LLSE API bridge for LuckyClover-Moderation",
+    "dependencies": [
+        {
+            "name": "legacy-script-engine-quickjs"
+        }
+    ]
+}
+
