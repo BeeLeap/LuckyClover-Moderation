@@ -8,6 +8,7 @@
 #include <mc/network/Packet/BlockActorDataPacket.h>
 #include <mc/network/packet/BookEditPacket.h>
 #include <mc/network/packet/ItemStackRequestPacket.h>
+#include <mc/network/packet/TextPacket.h>
 #include <mc/network/packet/item_stack_request_packet_data/RequestData.h>
 #include <mc/network/packet/book_edit_action/AddPage.h>
 #include <mc/network/packet/book_edit_action/Finalize.h>
@@ -98,6 +99,33 @@ LL_TYPE_INSTANCE_HOOK(
     origin(source, mutablePacket);
 }
 
+LL_TYPE_INSTANCE_HOOK(
+    TextPacketHook,
+    ll::memory::HookPriority::Normal,
+    ServerNetworkHandler,
+    &ServerNetworkHandler::$handle,
+    void,
+    NetworkIdentifier const& source,
+    TextPacket const& packet
+) {
+    auto mutablePacket = packet;
+    std::visit(
+        [](auto& body) {
+            using Body = std::decay_t<decltype(body)>;
+            if constexpr (std::is_same_v<Body, TextPacketPayload::AuthorAndMessage> ||
+                          std::is_same_v<Body, TextPacketPayload::MessageAndParams> ||
+                          std::is_same_v<Body, TextPacketPayload::MessageOnly>) {
+                if (body.mType == TextPacketType::Chat || body.mType == TextPacketType::Whisper ||
+                    body.mType == TextPacketType::Raw) {
+                    Moderation::getInstance().moderateText(body.mMessage);
+                }
+            }
+        },
+        mutablePacket.mBody.get()
+    );
+    origin(source, mutablePacket);
+}
+
 Moderation& Moderation::getInstance() {
     static Moderation instance;
     return instance;
@@ -158,8 +186,9 @@ bool Moderation::enable() {
     }
 
     if (HangingSignEditPacketHook::hook() != 0 || BookEditPacketHook::hook() != 0 ||
-        ItemStackRequestPacketHook::hook() != 0) {
+        ItemStackRequestPacketHook::hook() != 0 || TextPacketHook::hook() != 0) {
         mSelf.getLogger().error("Failed to install one or more custom-text hooks");
+        TextPacketHook::unhook();
         ItemStackRequestPacketHook::unhook();
         HangingSignEditPacketHook::unhook();
         BookEditPacketHook::unhook();
@@ -173,6 +202,7 @@ bool Moderation::enable() {
 }
 
 bool Moderation::disable() {
+    TextPacketHook::unhook();
     ItemStackRequestPacketHook::unhook();
     BookEditPacketHook::unhook();
     HangingSignEditPacketHook::unhook();

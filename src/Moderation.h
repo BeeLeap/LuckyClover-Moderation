@@ -84,6 +84,7 @@ private:
     friend struct HangingSignEditPacketHook;
     friend struct BookEditPacketHook;
     friend struct ItemStackRequestPacketHook;
+    friend struct TextPacketHook;
 };
 
 } // namespace lucky_clover::moderation
