@@ -1,0 +1,17 @@
+{
+    "enabled": true,
+    "replacement": "***",
+    "categories": {
+        "adult": true,
+        "political": true,
+        "advertising": true,
+        "weapons": true,
+        "urls": true
+    },
+    "wordListPath": "data/banned-words",
+    "customWords": [],
+    "whitelist": [],
+    "logMatches": true,
+    "migrated": false
+}
+

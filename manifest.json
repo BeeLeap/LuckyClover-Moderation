@@ -1,0 +1,14 @@
+{
+    "name": "LuckyClover-Moderation",
+    "entry": "LuckyClover-Moderation.dll",
+    "type": "native",
+    "version": "0.2.9",
+    "author": "Mell",
+    "description": "Native chat and sign moderation for LuckyClover",
+    "dependencies": [
+        {
+            "name": "iListenAttentively"
+        }
+    ]
+}
+

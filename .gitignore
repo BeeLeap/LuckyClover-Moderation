@@ -1,0 +1,10 @@
+.xmake/
+build/
+bin/
+config.json
+*.dll
+*.pdb
+*.lib
+*.exp
+
+
