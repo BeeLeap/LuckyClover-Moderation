@@ -7,10 +7,10 @@ option("target_type")
 option_end()
 
 add_repositories("levimc-repo https://github.com/LiteLDev/xmake-repo.git")
--- Keep the native ABI aligned with the LeviLamina version installed by the
--- test server. Unpinned resolution may select a newer incompatible package.
-add_requires("levilamina 26.51.5", {configs = {target_type = get_config("target_type")}})
-add_requires("ilistenattentively 0.17.0", {configs = {target_type = get_config("target_type")}})
+-- Keep the native ABI aligned with the LeviLamina 26.60 server. Unpinned
+-- resolution may select a newer incompatible package.
+add_requires("levilamina 26.60.2", {configs = {target_type = get_config("target_type")}})
+add_requires("ilistenattentively 0.18.0", {configs = {target_type = get_config("target_type")}})
 add_requires("levibuildscript")
 
 if not has_config("vs_runtime") then
@@ -46,4 +46,3 @@ target("LuckyClover-Moderation")
         {tools = {"clang_cl"}}
     )
     set_toolchains("clang-cl")
-

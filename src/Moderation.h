@@ -7,7 +7,9 @@
 #include <ll/api/event/player/PlayerChatEvent.h>
 #include <ll/api/event/world/ServerLevelTickEvent.h>
 #include <ll/api/mod/NativeMod.h>
+#include <ila/event/server/ReceivePacketEvent.h>
 #include <ila/event/world/actor/player/PlayerEditSignEvent.h>
+#include <mc/network/Packet.h>
 
 class NetworkIdentifier;
 class BlockActorDataPacket;
@@ -27,6 +29,7 @@ class ItemStackRequestPacket;
 namespace lucky_clover::moderation {
 
 using SignEditEvent = ila::mc::world::actor::player::PlayerEditSignBeforeEvent;
+using ReceivePacketEvent = ila::mc::server::ReceivePacketBeforeEvent<Packet>;
 
 class Moderation final {
     struct TrieNode {
@@ -63,6 +66,7 @@ private:
     void insertWord(TrieNode& root, std::string const& word);
     void onChat(ll::event::PlayerChatEvent& event);
     void onEditSign(SignEditEvent& event);
+    void onReceivePacket(ReceivePacketEvent& event);
     bool onHangingSignPacket(ServerPlayer& player, std::shared_ptr<BlockActorDataPacket> const& packet);
     bool moderateText(std::string& text);
     std::string normalize(std::string const& text) const;
@@ -79,13 +83,12 @@ private:
     std::shared_ptr<ll::event::Listener<ll::event::PlayerChatEvent>> mChatListener;
     std::shared_ptr<ll::event::Listener<ll::event::ServerLevelTickEvent>> mTickListener;
     std::shared_ptr<ll::event::Listener<SignEditEvent>> mSignListener;
+    std::shared_ptr<ll::event::Listener<ReceivePacketEvent>> mReceivePacketListener;
     std::filesystem::file_time_type mReloadSignal = std::filesystem::file_time_type::min();
 
     friend struct HangingSignEditPacketHook;
-    friend struct BookEditPacketHook;
     friend struct ItemStackRequestPacketHook;
     friend struct TextPacketHook;
 };
 
 } // namespace lucky_clover::moderation
-

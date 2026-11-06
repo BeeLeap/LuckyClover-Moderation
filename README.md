@@ -8,7 +8,7 @@
 
 ## 构建
 
-当前目标为 LeviLamina 26.51.x，依赖上游 `LiteLDev/iListenAttentively` 0.17.0 或更新版本。该上游的 v0.17.0 已明确适配 LeviLamina 26.51。
+当前目标为 LeviLamina 26.60.x，依赖上游 `LiteLDev/iListenAttentively` 0.18.0 或更新版本。构建默认使用 LeviLamina 26.60.2 和对应的服务端运行数据。
 
 需要准备：
 

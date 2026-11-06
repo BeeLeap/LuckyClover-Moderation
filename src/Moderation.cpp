@@ -56,32 +56,6 @@ LL_TYPE_INSTANCE_HOOK(
 }
 
 LL_TYPE_INSTANCE_HOOK(
-    BookEditPacketHook,
-    ll::memory::HookPriority::Normal,
-    ServerNetworkHandler,
-    &ServerNetworkHandler::$handle,
-    void,
-    NetworkIdentifier const& source,
-    BookEditPacket const& packet
-) {
-    auto mutablePacket = packet;
-    std::visit(
-        [](auto& action) {
-            using Action = std::decay_t<decltype(action)>;
-            if constexpr (std::is_same_v<Action, BookEditAction::AddPage> ||
-                          std::is_same_v<Action, BookEditAction::ReplacePage>) {
-                Moderation::getInstance().moderateText(action.mPageText);
-            } else if constexpr (std::is_same_v<Action, BookEditAction::Finalize>) {
-                Moderation::getInstance().moderateText(action.mTitle);
-                Moderation::getInstance().moderateText(action.mAuthor);
-            }
-        },
-        mutablePacket.mOperation.get()
-    );
-    origin(source, mutablePacket);
-}
-
-LL_TYPE_INSTANCE_HOOK(
     ItemStackRequestPacketHook,
     ll::memory::HookPriority::Normal,
     ServerNetworkHandler,
@@ -90,7 +64,7 @@ LL_TYPE_INSTANCE_HOOK(
     NetworkIdentifier const&       source,
     ItemStackRequestPacket const& packet
 ) {
-    auto mutablePacket = packet;
+    auto& mutablePacket = const_cast<ItemStackRequestPacket&>(packet);
     for (auto& request : mutablePacket.mRequests.get()) {
         for (auto& text : request.mStringsToFilter.get()) {
             Moderation::getInstance().moderateText(text);
@@ -108,7 +82,7 @@ LL_TYPE_INSTANCE_HOOK(
     NetworkIdentifier const& source,
     TextPacket const& packet
 ) {
-    auto mutablePacket = packet;
+    auto& mutablePacket = const_cast<TextPacket&>(packet);
     std::visit(
         [](auto& body) {
             using Body = std::decay_t<decltype(body)>;
@@ -185,13 +159,26 @@ bool Moderation::enable() {
         return false;
     }
 
-    if (HangingSignEditPacketHook::hook() != 0 || BookEditPacketHook::hook() != 0 ||
+    mReceivePacketListener = ll::event::Listener<ReceivePacketEvent>::create(
+        [this](ReceivePacketEvent& event) { onReceivePacket(event); },
+        ll::event::EventPriority::Highest
+    );
+    if (!ll::event::EventBus::getInstance().addListener(mReceivePacketListener)) {
+        mReceivePacketListener.reset();
+        mSelf.getLogger().error("Failed to subscribe to ReceivePacketBeforeEvent");
+        ll::event::EventBus::getInstance().removeListener(mSignListener);
+        mSignListener.reset();
+        return false;
+    }
+
+    if (HangingSignEditPacketHook::hook() != 0 ||
         ItemStackRequestPacketHook::hook() != 0 || TextPacketHook::hook() != 0) {
         mSelf.getLogger().error("Failed to install one or more custom-text hooks");
         TextPacketHook::unhook();
         ItemStackRequestPacketHook::unhook();
         HangingSignEditPacketHook::unhook();
-        BookEditPacketHook::unhook();
+        ll::event::EventBus::getInstance().removeListener(mReceivePacketListener);
+        mReceivePacketListener.reset();
         ll::event::EventBus::getInstance().removeListener(mSignListener);
         mSignListener.reset();
         return false;
@@ -204,7 +191,6 @@ bool Moderation::enable() {
 bool Moderation::disable() {
     TextPacketHook::unhook();
     ItemStackRequestPacketHook::unhook();
-    BookEditPacketHook::unhook();
     HangingSignEditPacketHook::unhook();
     if (mChatListener) {
         ll::event::EventBus::getInstance().removeListener(mChatListener);
@@ -217,6 +203,10 @@ bool Moderation::disable() {
     if (mSignListener) {
         ll::event::EventBus::getInstance().removeListener(mSignListener);
         mSignListener.reset();
+    }
+    if (mReceivePacketListener) {
+        ll::event::EventBus::getInstance().removeListener(mReceivePacketListener);
+        mReceivePacketListener.reset();
     }
     return true;
 }
@@ -508,6 +498,24 @@ std::string Moderation::filter(std::string const& text, bool& matched, size_t& m
     }
     output.append(text, cursor, std::string::npos);
     return output;
+}
+
+void Moderation::onReceivePacket(ReceivePacketEvent& event) {
+    if (!mConfig.enabled || mWords.empty() || event.packet().getId() != MinecraftPacketIds::BookEdit) return;
+    auto& packet = static_cast<BookEditPacket&>(event.packet());
+    std::visit(
+        [this](auto& action) {
+            using Action = std::decay_t<decltype(action)>;
+            if constexpr (std::is_same_v<Action, BookEditAction::AddPage> ||
+                          std::is_same_v<Action, BookEditAction::ReplacePage>) {
+                moderateText(action.mPageText);
+            } else if constexpr (std::is_same_v<Action, BookEditAction::Finalize>) {
+                moderateText(action.mTitle);
+                moderateText(action.mAuthor);
+            }
+        },
+        packet.mOperation.get()
+    );
 }
 
 void Moderation::onChat(ll::event::PlayerChatEvent& event) {
