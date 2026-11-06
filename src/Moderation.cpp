@@ -22,6 +22,7 @@
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <fmt/format.h>
 #include <sstream>
 #include <type_traits>
 #include <variant>
@@ -163,7 +164,12 @@ bool Moderation::enable() {
         [this](ReceivePacketEvent& event) { onReceivePacket(event); },
         ll::event::EventPriority::Highest
     );
-    if (!ll::event::EventBus::getInstance().addListener(mReceivePacketListener)) {
+    static auto const receivePacketBookEditEventName = fmt::format(
+        "{0}<class BookEditPacket>",
+        ll::reflection::type_name_v<ReceivePacketEvent>
+    );
+    static auto const receivePacketBookEditEventId = ll::event::EventId{receivePacketBookEditEventName};
+    if (!ll::event::EventBus::getInstance().addListener(mReceivePacketListener, receivePacketBookEditEventId)) {
         mReceivePacketListener.reset();
         mSelf.getLogger().error("Failed to subscribe to ReceivePacketBeforeEvent");
         ll::event::EventBus::getInstance().removeListener(mSignListener);
