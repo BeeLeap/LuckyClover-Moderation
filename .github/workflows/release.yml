@@ -9,7 +9,6 @@ jobs:
   build:
     name: Build Windows server plugin
     runs-on: windows-latest
-    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: xmake-io/github-action-setup-xmake@v1
