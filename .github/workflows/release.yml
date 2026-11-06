@@ -2,10 +2,8 @@ name: Build and publish release
 
 on:
   release:
-    types: [published]
-
-permissions:
-  contents: write
+    types:
+      - published
 
 jobs:
   build:
@@ -13,39 +11,21 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup xmake
-        uses: xmake-io/github-action-setup-xmake@v1
-
-      - name: Cache xmake packages
-        uses: actions/cache@v6
+      - uses: actions/checkout@v7
+      - uses: xmake-io/github-action-setup-xmake@v1
+      - uses: actions/cache@v6
         with:
           path: |
             ~/AppData/Local/.xmake
           key: xmake-${{ hashFiles('xmake.lua') }}
           restore-keys: |
             xmake-
-
-      - name: Setup LLVM
-        uses: ZhongRuoyu/setup-llvm@v0
+      - uses: ZhongRuoyu/setup-llvm@v0
         with:
           llvm-version: 22
-
-      - name: Update xmake repositories
-        shell: pwsh
-        run: xmake repo -u
-
-      - name: Configure
-        shell: pwsh
-        timeout-minutes: 20
-        run: xmake f -a x64 -m release -p windows --target_type=server -v -y
-
-      - name: Build
-        shell: pwsh
-        timeout-minutes: 20
-        run: xmake -w -y
+      - run: xmake repo -u
+      - run: xmake f -a x64 -m release -p windows --target_type=server -y
+      - run: xmake -w -y
 
       - name: Assemble native plugin package
         shell: pwsh
@@ -65,23 +45,40 @@ jobs:
           Copy-Item 'LuckyClover-Moderation-API/manifest.json', 'LuckyClover-Moderation-API/LuckyClover-Moderation-API.js', 'LuckyClover-Moderation-API/README.md', 'LuckyClover-Moderation-API/LICENSE' $api
           Compress-Archive -Path (Join-Path $api '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE "LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip") -Force
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
-          name: LuckyClover-Moderation-${{ github.event.release.tag_name }}
+          name: ${{ github.event.repository.name }}-${{ github.sha }}-windows-x64
           path: |
             LuckyClover-Moderation-${{ github.event.release.tag_name }}-win-x64.zip
             LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip
 
-      - name: Extract release notes
-        id: release-notes
+  update-release-notes:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: extract-release-notes
         uses: ffurrer2/extract-release-notes@v3
-
-      - name: Upload assets to GitHub Release
-        uses: softprops/action-gh-release@v3
+      - uses: softprops/action-gh-release@v3
         with:
           body: |
-            ${{ steps.release-notes.outputs.release_notes }}
+            ${{ steps.extract-release-notes.outputs.release_notes }}
+
+  upload-to-release:
+    needs:
+      - build
+      - update-release-notes
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.sha }}-windows-x64
+          path: artifact
+      - uses: softprops/action-gh-release@v3
+        with:
           files: |
-            LuckyClover-Moderation-${{ github.event.release.tag_name }}-win-x64.zip
-            LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip
+            artifact/LuckyClover-Moderation-${{ github.event.release.tag_name }}-win-x64.zip
+            artifact/LuckyClover-Moderation-API-${{ github.event.release.tag_name }}.zip
