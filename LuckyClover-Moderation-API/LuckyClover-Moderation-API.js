@@ -3,8 +3,8 @@
 const PLUGIN_NAME = "LuckyClover-Moderation-API";
 const PLUGIN_VERSION = [0, 1, 0];
 const NAMESPACE = "LuckyCloverModeration";
-const MODERATION_CONFIG = "plugins/LuckyClover-Moderation/config.json";
-const WORD_LIST_DIR = "plugins/LuckyClover-Moderation/data/banned-words/";
+const MODERATION_CONFIG = "mods/LuckyClover-Moderation/config.json";
+const WORD_LIST_DIR = "mods/LuckyClover-Moderation/data/banned-words/";
 const CATEGORY_FILES = {
     adult: "色情类.txt",
     political: "政治类.txt",

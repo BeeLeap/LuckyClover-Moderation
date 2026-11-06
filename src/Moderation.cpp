@@ -264,7 +264,10 @@ void Moderation::saveConfig() {
 }
 
 bool Moderation::tryMigrateLegacyConfig() {
-    auto legacyPath = std::filesystem::path("plugins/LuckyClover-Plugin/config.json");
+    auto legacyPath = std::filesystem::path("mods/LuckyClover-Plugin/config.json");
+    if (!std::filesystem::exists(legacyPath)) {
+        legacyPath = std::filesystem::path("plugins/LuckyClover-Plugin/config.json");
+    }
     std::ifstream input(legacyPath);
     if (!input) return false;
 
@@ -316,7 +319,10 @@ bool Moderation::loadWords() {
         stage = "locating word list directory";
         auto directory = std::filesystem::path(resolvePath(mConfig.wordListPath));
         if (!std::filesystem::exists(directory)) {
-            auto legacy = std::filesystem::path("plugins/LuckyClover-Plugin/data/banned-words");
+            auto legacy = std::filesystem::path("mods/LuckyClover-Plugin/data/banned-words");
+            if (!std::filesystem::exists(legacy)) {
+                legacy = std::filesystem::path("plugins/LuckyClover-Plugin/data/banned-words");
+            }
             if (std::filesystem::exists(legacy)) directory = legacy;
         }
         if (std::filesystem::exists(directory)) {
