@@ -7,9 +7,9 @@ option("target_type")
 option_end()
 
 add_repositories("levimc-repo https://github.com/LiteLDev/xmake-repo.git")
--- Keep the native ABI aligned with the LeviLamina 26.60 server. Unpinned
+-- Keep the native ABI aligned with the LeviLamina 26.60.3 server. Unpinned
 -- resolution may select a newer incompatible package.
-add_requires("levilamina 26.60.2", {configs = {target_type = get_config("target_type")}})
+add_requires("levilamina 26.60.3", {configs = {target_type = get_config("target_type")}})
 add_requires("ilistenattentively 0.18.0", {configs = {target_type = get_config("target_type")}})
 add_requires("levibuildscript")
 
